@@ -11,7 +11,7 @@
 
   # Symlink the site to /srv.
   #
-  # Note, this repository is installed to /etc/nixos. 
+  # Note, this repository is installed to /etc/nixos.
   systemd.tmpfiles.rules = [
     "L /srv/me - - - - /etc/nixos/me"
   ];
