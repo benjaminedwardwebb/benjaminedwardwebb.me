@@ -12,6 +12,7 @@ tree --noreport -L 1
 ```
 .
 ├── configuration.nix
+├── LICENSE
 ├── me
 ├── README.md
 ├── shell.nix
