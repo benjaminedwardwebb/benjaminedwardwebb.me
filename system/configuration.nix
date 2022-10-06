@@ -49,6 +49,7 @@
   # Let benjaminedwardwebb access root-owned git repository at /etc/nixos.
   programs.git.enable = true;
   programs.git.config.safe.directory = "/etc/nixos";
+  programs.git.config.pull.rebase = true;
 
   # Set my preferred inputrc.
   environment.etc."inputrc".source = ./inputrc;
