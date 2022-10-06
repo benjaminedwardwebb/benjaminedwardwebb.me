@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Build the web site HTML and CSS assets.
+# TODO Replace this with something like nix and hakyll. This sucks.
+REPOSITORY="$(git rev-parse --show-toplevel)" || exit 1
+SOURCE_DIRECTORY="$REPOSITORY/me/benjaminedwardwebb"
+BUILD_DIRECTORY="$(mktemp --directory)" || exit 1
+TARGET_DIRECTORY="$REPOSITORY/target/me/benjaminedwardwebb"
+
+function main {
+	prepare_stylesheet || return 1
+	build_html || return 1
+	install_to_target || return 1
+	return 0
+}
+
+function prepare_stylesheet {
+	local -r tmp="$(mktemp --directory)" || return 1
+	local -r url="https://github.com/edwardtufte/tufte-css/archive/refs/tags/v1.8.0.tar.gz"
+	local -r version="1.8.0"
+	local -r artifact="$tmp/tufte-css-$version"
+	local -r file1="tufte.min.css"
+	local -r file2="et-book"
+	wget --output-document "$artifact.tar.gz" "$url" || return 1
+	gunzip "$artifact.tar.gz" || return 1
+	tar --extract --file "$artifact.tar" --directory "$tmp" || return 1
+	mv "$artifact/$file1" "$BUILD_DIRECTORY" || return 1
+	mv "$artifact/$file2" "$BUILD_DIRECTORY" || return 1
+	return 0
+}
+
+function build_html {
+	local -r src="$SOURCE_DIRECTORY"
+	local -r static_files="$(find $src -iname "*.html" -o -iname "*.css" -o -iname "*.gif")"
+	for file in "$static_files"; do
+		cp $file $BUILD_DIRECTORY || return 1
+	done
+	local -r md_files=($(find $src -name "*.md"))
+	for file in "${md_files[@]}"; do
+		build_html_file $file || return 1
+	done
+	return 0
+}
+
+function build_html_file {
+	local -r source_file="$1"
+
+	local -r tmp="$(mktemp --directory)" || return 1
+
+	local -r relative_source_file="${source_file#$SOURCE_DIRECTORY}"
+	echo $relative_source_file
+	local -r relative_build_file="${relative_source_file%.md}.html"
+	echo $relative_build_file
+	local -r build_file="$tmp$relative_build_file"
+	echo $build_file
+
+	mkdir -p "$(dirname $build_file)" || return 1
+
+	# CSS is hardcoded for now.
+	pandoc \
+		--from markdown+smart \
+		--to=html5 \
+		--standalone \
+		--css="tufte.min.css" \
+		--css="style.css" \
+		--toc \
+		--output "$build_file" \
+		"$source_file" \
+		|| return 1
+
+	cp --recursive --no-target-directory "$tmp" "$BUILD_DIRECTORY" || return 1
+
+	return 0
+}
+
+function install_to_target {
+	rm --recursive --force "$TARGET_DIRECTORY" || return 1
+	mkdir -p "$TARGET_DIRECTORY" || return 1
+	cp --recursive --no-target-directory "$BUILD_DIRECTORY" "$TARGET_DIRECTORY" \
+		|| return 1
+	return 0
+}
+
+main $@ || exit 1

@@ -39,9 +39,11 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    vim
     curl
     git
+    pandoc
+    vim
+    wget
   ];
 
   # Let benjaminedwardwebb access root-owned git repository at /etc/nixos.
